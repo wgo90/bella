@@ -25,7 +25,7 @@
         /* Container principal */
         .emergency-container {
             width: 100%;
-            max-width: 500px; /* Limite máximo para desktop */
+            max-width: 500px;
             margin: 0 auto;
             padding: 20px 15px;
             background-color: #fff;
@@ -72,7 +72,7 @@
             font-size: 2.2em;
             font-weight: bold;
             text-decoration: none;
-            word-break: break-all; /* Para evitar quebra de layout em telas pequenas */
+            word-break: break-all;
         }
         
         .contact-pai {
@@ -89,6 +89,75 @@
         
         .contact-mae .contact-phone {
             color: #5bc0de;
+        }
+        
+        /* Botões WhatsApp */
+        .whatsapp-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .whatsapp-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .whatsapp-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .whatsapp-pai {
+            background-color: #25D366;
+            color: white;
+        }
+        
+        .whatsapp-mae {
+            background-color: #25D366;
+            color: white;
+        }
+        
+        .whatsapp-icon {
+            font-size: 1.5em;
+        }
+        
+        /* Status da localização */
+        .location-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .location-loading {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .location-success {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .location-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
         /* Rodapé */
@@ -124,6 +193,16 @@
             .contact-phone {
                 font-size: 2.5em;
             }
+            
+            .whatsapp-buttons {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            
+            .whatsapp-btn {
+                flex: 1;
+                margin: 0 5px;
+            }
         }
         
         @media (min-width: 1024px) {
@@ -148,7 +227,7 @@
         </h1>
 
         <p class="emergency-text">
-            Por favor, entre em contato <b>Imediatamente</b> com os responsáveis clicando nos telefones abaixo.
+            Por favor, entre em contato <b>Imediatamente</b> com os responsáveis.
         </p>
 
         <div class="contact-card contact-pai">
@@ -169,9 +248,109 @@
             </a>
         </div>
 
+        <div id="locationStatus" class="location-status" style="display: none;"></div>
+
+        <div class="whatsapp-buttons">
+            <button onclick="getLocationAndSend('pai')" class="whatsapp-btn whatsapp-pai">
+                <span class="whatsapp-icon">📲</span>
+                WhatsApp Pai
+            </button>
+            
+            <button onclick="getLocationAndSend('mae')" class="whatsapp-btn whatsapp-mae">
+                <span class="whatsapp-icon">📲</span>
+                WhatsApp Mãe
+            </button>
+        </div>
+
         <p class="emergency-footer">
             Obrigado por sua ajuda e apoio.
         </p>
     </div>
+
+    <script>
+        function getLocationAndSend(contact) {
+            const statusElement = document.getElementById('locationStatus');
+            
+            // Mostrar status de carregamento
+            statusElement.style.display = 'block';
+            statusElement.className = 'location-status location-loading';
+            statusElement.innerHTML = '🔄 Obtendo localização...';
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        // Sucesso - obter coordenadas
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        
+                        // Criar link do Google Maps
+                        const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                        
+                        // Mensagem com localização
+                        const message = `🚨 EMERGÊNCIA 🚨%0A%0AEstou com sua filha, segue localização:%0A%0A${mapsUrl}`;
+                        
+                        // Número do telefone baseado no contato
+                        const phoneNumber = contact === 'pai' ? '5527999248555' : '5527998291905';
+                        
+                        // Atualizar status
+                        statusElement.className = 'location-status location-success';
+                        statusElement.innerHTML = '✅ Localização obtida! Abrindo WhatsApp...';
+                        
+                        // Abrir WhatsApp após um breve delay
+                        setTimeout(() => {
+                            window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+                        }, 1000);
+                        
+                    },
+                    function(error) {
+                        // Erro ao obter localização
+                        let errorMessage = '❌ Não foi possível obter a localização. ';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += 'Permissão negada.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += 'Localização indisponível.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += 'Tempo esgotado.';
+                                break;
+                            default:
+                                errorMessage += 'Erro desconhecido.';
+                        }
+                        
+                        statusElement.className = 'location-status location-error';
+                        statusElement.innerHTML = errorMessage + ' Enviando mensagem sem localização.';
+                        
+                        // Mensagem sem localização
+                        const message = `🚨 EMERGÊNCIA 🚨%0A%0AEstou com sua filha, segue localização.`;
+                        const phoneNumber = contact === 'pai' ? '5527999248555' : '5527998291905';
+                        
+                        // Abrir WhatsApp mesmo sem localização
+                        setTimeout(() => {
+                            window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+                        }, 2000);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                // Geolocalização não suportada
+                statusElement.className = 'location-status location-error';
+                statusElement.innerHTML = '❌ Geolocalização não é suportada neste navegador. Enviando mensagem sem localização.';
+                
+                const message = `🚨 EMERGÊNCIA 🚨%0A%0AEstou com sua filha, segue localização.`;
+                const phoneNumber = contact === 'pai' ? '5527999248555' : '5527998291905';
+                
+                setTimeout(() => {
+                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+                }, 1000);
+            }
+        }
+    </script>
 </body>
 </html>
